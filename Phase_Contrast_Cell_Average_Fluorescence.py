@@ -51,7 +51,7 @@ image_dict={}
 ##This loop pulls out all the TIF files and uses re to determine if its wavelength 1 (phase contrast) or any other (fluorescence) and adds it to a dictionary-v
 for image_filename in file_list:
 	get_extension=image_filename.split('.')
-	if get_extension[-1]=="TIF":
+	if re.search('\.tif{1,2}$', image_filename, flags=re.IGNORECASE):
 			get_wavelength=image_filename.split('_')
 			common_filename='_'.join(get_wavelength[0:-1])
 			if common_filename not in image_dict:
@@ -86,7 +86,7 @@ for image_set in image_dict:
 	skipcheck=False
 	while Analysis_done==False:
 		##Creates options for Analyze particles function using user input for min and max size.
-		options="size="+str(minsize)+"-Infinity exclude clear include add"
+		options="size="+str(minsize)+"-Infinity exclude clear include add pixel"
 		##Runs the Analyze particles function
 		IJ().run(phase_img,"Analyze Particles...", options)
 		##Gets access to the ROI manager
