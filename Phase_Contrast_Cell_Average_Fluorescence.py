@@ -1,3 +1,8 @@
+## Authors: Dr James Grimshaw | Newcastle University | james.grimshaw@newcastle.ac.uk
+## This Fiji macro runs in Jython and allows the user to quantify mean fluorescence intensity of bacterial cells, segmented using phase contrast
+## This macro takes TIF files with channels labelled _w1 for phase contrast and _w2/w3/w4 for other channels
+## The user can input size filters for the analyse particles function as well as seperate out cells on the binary image using the pencil tool 
+
 from ij import IJ, ImagePlus, WindowManager
 from ij.plugin import RoiEnlarger
 from ij.plugin.frame import RoiManager
