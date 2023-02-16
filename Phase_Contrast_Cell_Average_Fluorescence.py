@@ -43,7 +43,10 @@ if name1==None:
 ##Gets path for where to save data
 savepath=SD1.getDirectory()+name1
 
-sys.stdout=open(savepath,'w')
+##Makes a results file based upon the users chosen savepath
+ResultsFile = open(savepath,'w')
+##Sets standard output to be that results file
+sys.stdout = ResultsFile
 
 file_list=os.listdir(image_dir)
 image_dict={}
@@ -188,12 +191,16 @@ for image_set in image_dict:
 		##Goes through the list of cells and prints the mean fluorescence minus the background-^
 	##This loop goes through all the fluorescence images and gets the mean values-------------------^
 
+## Closes the fluorescence image to release memory
+fluor_img.close()
 ##Restores original settings for measurements
 Analyzer().setMeasurements(original_setting)
 ##Closes the ROI Manager
 RM.close()
 ##Restores standard output to normal
 sys.stdout=NormOut
+##Closes the results file
+ResultsFile.close()
 ##Creates a message indicating process is finished
 gd=GenericDialog('Done')
 gd.addMessage('Done')
