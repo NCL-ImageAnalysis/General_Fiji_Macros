@@ -71,4 +71,6 @@ if len(FileList) > 0:
 				# Saves the image as a Tiff
 				FinalSavePath = os.path.join(SaveDirPath, FinalSaveName)
 				SaveObj.saveAsTiff(FinalSavePath)
+			## Will remove existing series so wont just save the first file over and over again
+			Options.clearSeries()
 
