@@ -96,13 +96,13 @@ for save_path in todofiles:
 	image_path = image_dir+image_filename2
 	## Accesses image to be cropped
 	img = ImagePlus(image_path)
-	## Shows image to user
-	img.show()
 	## Gets height and width of image in pixels
 	height = img.getHeight()
 	width = img.getWidth()
 	## Will loop through untill user selects desired settings
 	while cont == False:
+		## Shows image to user
+		img.show()
 		## Dialog to enter settings
 		Settings_Dialog = GenericDialog("Area to Select")
 		Settings_Dialog.addNumericField("Height",height,6,10,"Pixels")
