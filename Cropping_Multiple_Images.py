@@ -131,16 +131,18 @@ for save_path in todofiles:
 			cont = True
 		else:
 			pass
+	
 	## Runs specify command to create ROI
-	IJ().run("Specify...",settings)
+	IJ().run(img, "Specify...", settings)
 	## Runs crop command to crop the image
-	IJ.run("Crop")
+	Cropped = img.crop()
+	## Closes the full size image
+	img.close()
 	## Saves cropped image
-	FileSaver(img).saveAsTiff(save_path)
-	## Closes opened image
-	imagewindow = WindowManager.getCurrentWindow()
-	WindowManager.setCurrentWindow(imagewindow)
-	IJ.run("Close")
+	FileSaver(Cropped).saveAsTiff(save_path)
+
+	## Closes the cropped image
+	Cropped.close()
 	## Shows progress to user
 	progress += 1
 	IJ.showProgress(progress,len(todofiles))
