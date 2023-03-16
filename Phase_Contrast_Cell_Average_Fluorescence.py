@@ -92,6 +92,7 @@ settings_dialog.addCheckbox("Subtract Background", True)
 settings_dialog.showDialog()
 minsize = settings_dialog.getNextString()
 maxsize = settings_dialog.getNextString()
+SubBackground = settings_dialog.getNextBoolean()
 if settings_dialog.wasCanceled():
 	sys.exit('Cancelled')
 
@@ -187,25 +188,31 @@ for image_set in image_dict:
 			mean_list.append(mean[0])
 			x+=1
 		##Gets mean out of results table and adds it to a list-^
-		##Combines ROI
-		RM.runCommand(fluor_img,"Combine")
-		##enlarges combined ROI to avoid fluorescence around cell
-		cur_roi = fluor_img.getRoi()
-		enlarged_roi = RoiEnlarger().enlarge(cur_roi,25)
-		##Inverts the ROI so selecting Background not the cells
-		fluor_img.setRoi(enlarged_roi)
-		IJ().run(fluor_img,"Make Inverse","")
-		##Measures the mean of background
-		measured = Analyzer(fluor_img).measure()
-		##Pulls mean value out
-		bgresults = Analyzer.getResultsTable()
-		bgmean = bgresults.getValue(1,0)
-		##Goes through the list of cells and prints the mean fluorescence minus the background-v
-		print fluor_image_filename,",","Subtracted Background:"+str(bgmean),",",
-		for value in mean_list:
-			print value-bgmean,",",
-		print ""
-		##Goes through the list of cells and prints the mean fluorescence minus the background-^
+		if SubBackground:
+			##Combines ROI
+			RM.runCommand(fluor_img,"Combine")
+			##enlarges combined ROI to avoid fluorescence around cell
+			cur_roi = fluor_img.getRoi()
+			enlarged_roi = RoiEnlarger().enlarge(cur_roi,25)
+			##Inverts the ROI so selecting Background not the cells
+			fluor_img.setRoi(enlarged_roi)
+			IJ().run(fluor_img,"Make Inverse","")
+			##Measures the mean of background
+			measured = Analyzer(fluor_img).measure()
+			##Pulls mean value out
+			bgresults = Analyzer.getResultsTable()
+			bgmean = bgresults.getValue(1,0)
+			##Goes through the list of cells and prints the mean fluorescence minus the background-v
+			print fluor_image_filename,",","Subtracted Background:"+str(bgmean),",",
+			for value in mean_list:
+				print value-bgmean,",",
+			print ""
+			##Goes through the list of cells and prints the mean fluorescence minus the background-^
+		else:
+			print fluor_image_filename,",",
+			for value in mean_list:
+				print value,",",
+			print ""
 	##This loop goes through all the fluorescence images and gets the mean values-------------------^
 
 ## Closes the fluorescence image to release memory
