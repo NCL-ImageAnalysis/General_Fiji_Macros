@@ -97,7 +97,12 @@ if settings_dialog.wasCanceled():
 	sys.exit('Cancelled')
 
 ConfirmAll = False
-for image_set in image_dict:
+
+##Sorts the dictionary keys so will do images in reasonable order
+DictKeys = image_dict.keys()
+DictKeys.sort()
+
+for image_set in DictKeys:
 	##Creates path for getting to phase contrast image
 	phase_path = image_dir+image_dict[image_set][0]
 	phase_img = ImagePlus(phase_path)
