@@ -51,6 +51,32 @@ sys.stdout = ResultsFile
 file_list = os.listdir(image_dir)
 image_dict = {}
 
+WaveList = []
+for CheckFilename in file_list:
+	WaveObj = re.search('_w[1-9]', CheckFilename, flags=re.IGNORECASE)
+	if WaveObj:
+		WavelengthStr = WaveObj.group(0)[1:]
+		if WavelengthStr not in WaveList:
+			WaveList.append(WavelengthStr)
+
+WaveList.sort()
+
+##Allows user to input size restrictions for Particle analysis
+settings_dialog = GenericDialog("Input Size Restrictions")
+settings_dialog.addMessage("Input size constraints for particle analysis (pixels^2)")
+settings_dialog.addStringField("Minimum", "0")
+settings_dialog.addStringField("Maximum", "Infinity")
+settings_dialog.addCheckbox("Subtract Background", True)
+settings_dialog.addRadioButtonGroup("Choose Brightfield Wavelength", WaveList, 1, len(WaveList), WaveList[0])
+settings_dialog.showDialog()
+minsize = settings_dialog.getNextString()
+maxsize = settings_dialog.getNextString()
+SubBackground = settings_dialog.getNextBoolean()
+BrightWave = settings_dialog.getNextRadioButton()
+if settings_dialog.wasCanceled():
+	sys.exit('Cancelled')
+
+
 ##This loop pulls out all the TIF files and uses re to determine if its wavelength 1 (phase contrast) or any other (fluorescence) and adds it to a dictionary-----------v
 for image_filename in file_list:
 	## This checks that the file is a tif/tiff file		
@@ -60,7 +86,7 @@ for image_filename in file_list:
 		get_wavelength = image_filename.split('_')
 		## Iterates through split filename to get wavelength list item
 		for w in range(0, len(get_wavelength)):
-			if re.match('w[1-9]', get_wavelength[w]):
+			if re.match('w[1-9]', get_wavelength[w], flags=re.IGNORECASE):
 				WavelengthIndex = w
 				break
 		## Checks that it has actually found a wavelength for this file
@@ -76,25 +102,12 @@ for image_filename in file_list:
 				## Each dictionary item consists of a string containing the filename of the brightfield image and then a list containing filenames for fluorescent images
 				image_dict[common_filename] = ['',[]]
 			## Assigns the brightfield wavelength
-			if re.match('w1',Wavelength):
+			if re.match(BrightWave, Wavelength, flags=re.IGNORECASE):
 				image_dict[common_filename][0] = image_filename
 			## Assigns the fluorescence wavelength
-			elif re.match('w[2-9]',Wavelength):
+			elif re.match('w[1-9]',Wavelength, flags=re.IGNORECASE):
 				image_dict[common_filename][1].append(image_filename)
 ##This loop pulls out all the TIF files and uses re to determine if its wavelength 1 (phase contrast) or any other (fluorescence) and adds it to a dictionary-----------^
-
-##Allows user to input size restrictions for Particle analysis
-settings_dialog = GenericDialog("Input Size Restrictions")
-settings_dialog.addMessage("Input size constraints for particle analysis (pixels^2)")
-settings_dialog.addStringField("Minimum", "0")
-settings_dialog.addStringField("Maximum", "Infinity")
-settings_dialog.addCheckbox("Subtract Background", True)
-settings_dialog.showDialog()
-minsize = settings_dialog.getNextString()
-maxsize = settings_dialog.getNextString()
-SubBackground = settings_dialog.getNextBoolean()
-if settings_dialog.wasCanceled():
-	sys.exit('Cancelled')
 
 ConfirmAll = False
 
@@ -107,7 +120,8 @@ for image_set in DictKeys:
 	phase_path = image_dir+image_dict[image_set][0]
 	phase_img = ImagePlus(phase_path)
 	##Runs the Threshold command setting it to having a white background
-	IJ().run(phase_img,"Threshold...","BlackBackground=False")
+	IJ.run(phase_img, "Threshold...","BlackBackground=False")
+	IJ.setAutoThreshold(phase_img, "Default")
 	Analysis_done = False
 	skipcheck = False
 	while Analysis_done == False:
