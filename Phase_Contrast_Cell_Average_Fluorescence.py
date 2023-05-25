@@ -137,10 +137,12 @@ for image_set in DictKeys:
 		IJ().run(phase_img,"Analyze Particles...", options)
 		##Gets access to the ROI manager
 		RM = RoiManager.getInstance()
-		##Gets indexes of ROIs in the ROI manager
-		Ind2 = RM.getIndexes()
-		if len(Ind2) > 0:
+		try:
+			##Gets indexes of ROIs in the ROI manager
+			Ind2 = RM.getIndexes()
 			RM.select(Ind2[0])
+		except:
+			pass
 		##Creates dialog that allows users to confirm ROI generated, or repeat the analysis
 		gd = NonBlockingGenericDialog('Confirm?')
 		gd.enableYesNoCancel("Confirm","Repeat Analyze Particles")
