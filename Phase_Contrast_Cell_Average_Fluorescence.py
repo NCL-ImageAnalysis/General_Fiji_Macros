@@ -67,12 +67,14 @@ settings_dialog.addMessage("Input size constraints for particle analysis (pixels
 settings_dialog.addStringField("Minimum", "0")
 settings_dialog.addStringField("Maximum", "Infinity")
 settings_dialog.addCheckbox("Subtract Background", True)
-settings_dialog.addRadioButtonGroup("Choose Brightfield Wavelength", WaveList, 1, len(WaveList), WaveList[0])
+settings_dialog.addRadioButtonGroup("Choose Segmentation Wavelength", WaveList, 1, len(WaveList), WaveList[0])
+settings_dialog.addRadioButtonGroup("Segmentation Type", ["Phase Contrast", "Fluorescence"], 1, 2, "Phase Contrast")
 settings_dialog.showDialog()
 minsize = settings_dialog.getNextString()
 maxsize = settings_dialog.getNextString()
 SubBackground = settings_dialog.getNextBoolean()
 BrightWave = settings_dialog.getNextRadioButton()
+SegmentationType = settings_dialog.getNextRadioButton()
 if settings_dialog.wasCanceled():
 	sys.exit('Cancelled')
 
@@ -119,8 +121,12 @@ for image_set in DictKeys:
 	##Creates path for getting to phase contrast image
 	phase_path = image_dir+image_dict[image_set][0]
 	phase_img = ImagePlus(phase_path)
-	##Runs the Threshold command setting it to having a white background
-	IJ.run(phase_img, "Threshold...","BlackBackground=False")
+	if SegmentationType == "Phase Contrast":
+		##Runs the Threshold command setting it to having a white background
+		IJ.run(phase_img, "Threshold...","BlackBackground=False")
+	else:
+		##Runs the Threshold command setting it to having a dark background
+		IJ.run(phase_img, "Threshold...","BlackBackground=True")
 	IJ.setAutoThreshold(phase_img, "Default")
 	Analysis_done = False
 	skipcheck = False
@@ -131,9 +137,10 @@ for image_set in DictKeys:
 		IJ().run(phase_img,"Analyze Particles...", options)
 		##Gets access to the ROI manager
 		RM = RoiManager.getInstance()
-		##Selects all ROI in ROI manager
+		##Gets indexes of ROIs in the ROI manager
 		Ind2 = RM.getIndexes()
-		RM.select(Ind2[0])
+		if len(Ind2) > 0:
+			RM.select(Ind2[0])
 		##Creates dialog that allows users to confirm ROI generated, or repeat the analysis
 		gd = NonBlockingGenericDialog('Confirm?')
 		gd.enableYesNoCancel("Confirm","Repeat Analyze Particles")
