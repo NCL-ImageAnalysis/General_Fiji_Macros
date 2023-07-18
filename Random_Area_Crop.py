@@ -1,6 +1,5 @@
 ## Authors: Dr James Grimshaw | Newcastle University | james.grimshaw@newcastle.ac.uk
-## This Fiji macro runs in Jython and allows the user to convert nd2 files to TIF files
-## Channels are split and saved with _w1/w2/w3 etc being used to indicate channel 1/2/3 etc
+## This Fiji macro runs in Jython and allows the user to select random fields within an image
 
 import os, re, random
 from ij import IJ
