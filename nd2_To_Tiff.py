@@ -2,6 +2,9 @@
 ## This Fiji macro runs in Jython and allows the user to convert nd2 files to TIF files
 ## Channels are split and saved with _w1/w2/w3 etc being used to indicate channel 1/2/3 etc
 
+#@ File (label="Input:", style="directory") InputFolder
+#@ File (label="Output:", style="directory") OutputFolder
+
 import os, re, sys
 from ij import IJ
 from ij.gui import GenericDialog
@@ -14,28 +17,9 @@ from loci.formats import ImageReader, MetadataTools
 # Defines the pattern for searching for nd2 files
 Extension_Pattern = r'\.nd2$'
 
-# Creates dialog that will get input/output folders and settings for splitting channels and timepoints
-GD = GenericDialog("nd2 to Tiff")
-GD.addDirectoryField("Input:", '')
-GD.addDirectoryField("Output:", '')
-GD.addCheckboxGroup(2, 1, ["Split Channels", "Split Timepoints"], [False, False])
-GD.showDialog()
-
 # Gets the directory paths for input/output folders
-ImagesDir = GD.getNextString()
-SaveDirPath = GD.getNextString()
-
-# # Dialog where user chooses where their images should be kept
-# ImagesChooser = DirectoryChooser('Choose where to find your images')
-# ImagesDir = ImagesChooser.getDirectory()
-# if ImagesDir == None:
-# 	sys.exit('No Directory Selected')
-
-# # Dialog where user chooses where to save their data
-# SaveGUI = DirectoryChooser('Choose where to save your data')
-# SaveDirPath = SaveGUI.getDirectory()
-# if SaveDirPath == None:
-# 	sys.exit('No Directory Selected')
+ImagesDir = InputFolder.getPath()
+SaveDirPath = OutputFolder.getPath()
 
 if os.path.exists(ImagesDir) and os.path.exists(SaveDirPath):
 	FileList = []
