@@ -33,6 +33,41 @@ def getFilteredFileList(Directory, extension_pattern):
 		return False
 	return FilteredList
 
+def filenameCommonality(FileList):
+	"""Gets the common substring of a list of strings
+
+	Args:
+		ImageList ([str]): List of filenames
+
+	Returns:
+		str: Common filename substring
+	"""	
+	
+	if len(FileList) < 2:
+		try:
+			return FileList[1]
+		except IndexError:
+			return ""
+	# Initialising variables
+	Commonality = ""
+	StringLength = 1
+	# Iterates through each character of the first filename
+	while StringLength < len(FileList[0]):
+		# Gets the substring of the first filename
+		Substring = FileList[0][:StringLength]
+		# Iterates through every other filename in the list
+		for Image in FileList[1:]:
+			# If the substrings ever do not match 
+			# will return the common substring
+			if Image[:StringLength] != Substring:
+				return Commonality
+		# If the substrings match for all filenames
+		# will set the commonality to the substring
+		Commonality = Substring
+		# Increments the string length
+		StringLength += 1
+	return Commonality
+
 # Gets any open ROI manager, gets the ROI contained and closes it before starting the macro
 OldManager = RoiManager(False).getInstance()
 if OldManager != None:
@@ -56,6 +91,8 @@ SaveTimePath = os.path.join(SaveDirPath, TimeAddition)
 # Defines the pattern for searching for tif/tiff files
 Extension_Pattern = r'\.tif{1,2}$'
 FilteredFiles = getFilteredFileList(ImagesDir, Extension_Pattern)
+# Gets the common filename substring
+CommonFilename = filenameCommonality(FilteredFiles)
 
 # Defines a new Roi Manager instance for use by the Analyse particles function
 CurrentManager = RoiManager()
@@ -69,6 +106,7 @@ TableList = (ResultsTable(), ResultsTable(), ResultsTable(), ResultsTable())
 for ImageName in FilteredFiles:
 	# Gets the Image as an ImagePlus
 	imp = ImagePlus(os.path.join(ImagesDir,ImageName))
+	OutputName = ImageName.replace(CommonFilename, "")
 	# Gets the Number of Slices
 	Num_Slices = imp.getStackSize()
 	# Duplicates the image for thresholding
@@ -122,17 +160,17 @@ for ImageName in FilteredFiles:
 			# Try except clause is here in case the column does not yet exist
 			try:
 				# Gets the current value of the row to be modified. Should be 0.0
-				PrexistingVal = (TableList[Table].getValue(ImageName, SliceNumber-1))
+				PrexistingVal = (TableList[Table].getValue(OutputName, SliceNumber-1))
 			except IllegalArgumentException:
 				PrexistingVal = 0.0
 
 			# Checks that the Prexisting value was 0. If not then there are multiple ROI assigned to a single slice
 			if PrexistingVal == 0:
-				TableList[Table].setValue(ImageName, SliceNumber-1, Data_List[Table])
+				TableList[Table].setValue(OutputName, SliceNumber-1, Data_List[Table])
 
 			# If there are multiple ROI assigned to a single slice then will set the value to NaN
 			else:
-				TableList[Table].setValue(ImageName, SliceNumber-1, 'NaN')
+				TableList[Table].setValue(OutputName, SliceNumber-1, 'NaN')
 
 	# Resets the ROI manager between Images
 	CurrentManager.reset()
