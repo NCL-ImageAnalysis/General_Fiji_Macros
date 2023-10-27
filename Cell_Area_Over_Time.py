@@ -66,9 +66,9 @@ CurrentManager.hide()
 TableList = (ResultsTable(), ResultsTable(), ResultsTable(), ResultsTable())
 
 # Iterates though images in the path list
-for ImagePath in FilteredFiles:
+for ImageName in FilteredFiles:
 	# Gets the Image as an ImagePlus
-	imp = ImagePlus(ImagePath)
+	imp = ImagePlus(os.path.join(ImagesDir,ImageName))
 	# Gets the Number of Slices
 	Num_Slices = imp.getStackSize()
 	# Duplicates the image for thresholding
@@ -122,17 +122,17 @@ for ImagePath in FilteredFiles:
 			# Try except clause is here in case the column does not yet exist
 			try:
 				# Gets the current value of the row to be modified. Should be 0.0
-				PrexistingVal = (TableList[Table].getValue(ImagePath, SliceNumber-1))
+				PrexistingVal = (TableList[Table].getValue(ImageName, SliceNumber-1))
 			except IllegalArgumentException:
 				PrexistingVal = 0.0
 
 			# Checks that the Prexisting value was 0. If not then there are multiple ROI assigned to a single slice
 			if PrexistingVal == 0:
-				TableList[Table].setValue(ImagePath, SliceNumber-1, Data_List[Table])
+				TableList[Table].setValue(ImageName, SliceNumber-1, Data_List[Table])
 
 			# If there are multiple ROI assigned to a single slice then will set the value to NaN
 			else:
-				TableList[Table].setValue(ImagePath, SliceNumber-1, 'NaN')
+				TableList[Table].setValue(ImageName, SliceNumber-1, 'NaN')
 
 	# Resets the ROI manager between Images
 	CurrentManager.reset()
