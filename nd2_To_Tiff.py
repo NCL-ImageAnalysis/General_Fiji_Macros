@@ -32,44 +32,47 @@ if os.path.exists(ImagesDir) and os.path.exists(SaveDirPath):
 
 	if len(FileList) > 0:
 		for FoundFile in FileList:
-			FilePath = os.path.join(ImagesDir, FoundFile[0])
-			# BioFormats ImporterOptions constructor
-			Options = ImporterOptions()
-			# Selects the files path to be imported
-			Options.setId(FilePath)
-			# ImageReader constructor to get metadata
-			reader = ImageReader()
-			# Trys to select the file to pull out the metadata
-			reader.setId(FilePath)
-			# Gets the SeriesCount so can generate range to iterate though series
-			SeriesCount = reader.getSeriesCount()
-			# Iterates though all series in image (will only do one if there isnt a series)
-			for series in range(0, SeriesCount):
-				# Will show progress though series of images
-				if SeriesCount > 1:
-					IJ.showProgress(series, SeriesCount)
-				reader.setSeries(series)
-				# Gets the name of the series
-				SeriesName = reader.getSeriesMetadataValue('Image name')
-				# Selects the series for import
-				Options.setSeriesOn(series, True)
-				Options.setSplitChannels(True)
-				# Opens the images with BioFormats
-				Import = BF.openImagePlus(Options)
-				for Imp in Import:
-					ImpTitle = Imp.getTitle()
-					ChannelObj = re.split(r' - C=', ImpTitle, flags=re.IGNORECASE)
-					Channel = str(int(ChannelObj[1])+1)
+			try:
+				FilePath = os.path.join(ImagesDir, FoundFile[0])
+				# BioFormats ImporterOptions constructor
+				Options = ImporterOptions()
+				# Selects the files path to be imported
+				Options.setId(FilePath)
+				# ImageReader constructor to get metadata
+				reader = ImageReader()
+				# Trys to select the file to pull out the metadata
+				reader.setId(FilePath)
+				# Gets the SeriesCount so can generate range to iterate though series
+				SeriesCount = reader.getSeriesCount()
+				# Iterates though all series in image (will only do one if there isnt a series)
+				for series in range(0, SeriesCount):
+					# Will show progress though series of images
 					if SeriesCount > 1:
-						FinalSaveName = FoundFile[1] + '_' + SeriesName+'_w' + Channel + ".TIF"
-					else:
-						FinalSaveName = FoundFile[1] + '_w' + Channel + ".TIF"
-					SaveObj = FileSaver(Imp)
-					# Saves the image as a Tiff
-					FinalSavePath = os.path.join(SaveDirPath, FinalSaveName)
-					SaveObj.saveAsTiff(FinalSavePath)
-				## Will remove existing series so wont just save the first file over and over again
-				Options.clearSeries()
+						IJ.showProgress(series, SeriesCount)
+					reader.setSeries(series)
+					# Gets the name of the series
+					SeriesName = reader.getSeriesMetadataValue('Image name')
+					# Selects the series for import
+					Options.setSeriesOn(series, True)
+					Options.setSplitChannels(True)
+					# Opens the images with BioFormats
+					Import = BF.openImagePlus(Options)
+					for Imp in Import:
+						ImpTitle = Imp.getTitle()
+						ChannelObj = re.split(r' - C=', ImpTitle, flags=re.IGNORECASE)
+						Channel = str(int(ChannelObj[1])+1)
+						if SeriesCount > 1:
+							FinalSaveName = FoundFile[1] + '_' + SeriesName+'_w' + Channel + ".TIF"
+						else:
+							FinalSaveName = FoundFile[1] + '_w' + Channel + ".TIF"
+						SaveObj = FileSaver(Imp)
+						# Saves the image as a Tiff
+						FinalSavePath = os.path.join(SaveDirPath, FinalSaveName)
+						SaveObj.saveAsTiff(FinalSavePath)
+					## Will remove existing series so wont just save the first file over and over again
+					Options.clearSeries()
+			except:
+				IJ.error("Error opening file: " + FoundFile[0])
 	else:
 		IJ.error("No files in target directory")
 else:
