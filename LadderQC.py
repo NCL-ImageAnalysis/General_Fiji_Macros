@@ -13,6 +13,7 @@ from ij.io import FileSaver
 from ij.gui import Line
 from ij.gui import Overlay
 from ij.gui import Roi
+from ij.measure import Measurements
 from ij.measure import ResultsTable
 from ij.plugin import ZProjector
 from ij.plugin.filter import Analyzer
@@ -172,6 +173,17 @@ def selectWindow(Pattern):
 			return True
 	return False
 
+
+# This section sets the measurements that will be used
+AnalyzerClass = Analyzer()
+# Gets original measurements to reset later
+OriginalMeasurements = AnalyzerClass.getMeasurements()
+
+# Sets the measurements to be used
+AnalyzerClass.setMeasurements(
+	Measurements.SHAPE_DESCRIPTORS 
+	+ Measurements.CENTROID
+)
 
 # Gets the needed paths and filenames for input and output
 FileName = InputImage.getName()
@@ -339,3 +351,6 @@ for SortedRow in range(1, MaximaResults.size()):
 
 # Saves the results table
 MaximaResults.saveAs(os.path.join(OutputPath, FileNameNoExtension + "_XZ.csv"))
+
+# Resets the measurements to the original settings
+AnalyzerClass.setMeasurements(OriginalMeasurements)
