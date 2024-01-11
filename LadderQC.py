@@ -199,6 +199,9 @@ Options.setAutoscale(True)
 Imp = BF.openImagePlus(Options)[0]
 #------------------------------------------------------^
 
+Calibration = Imp.getCalibration()
+ZDepth = Calibration.getZ(1)
+
 # Max intensity of the image to get all of the ladder
 Projected = ZProjector.run(Imp, "max")
 # Removes the scale so ROI coordinates are correct
@@ -305,7 +308,7 @@ LineImage = Imp.crop("stack")
 Imp.close()
 
 # Runs the reslice command to get the XZ image similar to orthagonal view
-IJ.run(LineImage, "Reslice [/]...", "output=0.020 start=Top")
+IJ.run(LineImage, "Reslice [/]...", "output=" + str(ZDepth) +" start=Top avoid")
 
 # Gets the resliced image
 selectWindow("Reslice ")
