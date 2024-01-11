@@ -200,7 +200,7 @@ Imp = BF.openImagePlus(Options)[0]
 #------------------------------------------------------^
 
 Calibration = Imp.getCalibration()
-ZDepth = Calibration.getZ(1)
+ZDepth = Calibration.pixelDepth
 
 # Max intensity of the image to get all of the ladder
 Projected = ZProjector.run(Imp, "max")
@@ -341,7 +341,7 @@ WindowManager.getWindow("Results").close()
 
 # Calculates the axial step size for each maxima
 for Row in range(0, MaximaResults.size()):
-	AxialStep = MaximaResults.getValue("Y", Row) * Width
+	AxialStep = MaximaResults.getValue("Y", Row) * ZDepth
 	MaximaResults.setValue("AxialStep", Row, AxialStep)
 
 # Sorts the results table by the X coordinate
@@ -349,7 +349,7 @@ MaximaResults.sort("X")
 
 # Calculates the axial difference between each maxima
 for SortedRow in range(1, MaximaResults.size()):
-	AxialDiff = MaximaResults.getValue("AxialStep", SortedRow) - MaximaResults.getValue("AxialStep", SortedRow - 1)
+	AxialDiff = abs(MaximaResults.getValue("AxialStep", SortedRow) - MaximaResults.getValue("AxialStep", SortedRow - 1))
 	MaximaResults.setValue("AxialDiff", SortedRow, AxialDiff)
 
 # Saves the results table
