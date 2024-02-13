@@ -327,6 +327,8 @@ Prominence = str((ImpStats.max - ImpStats.min)/2)
 # Finds the maxima in the image and outputs to a results table
 IJ.run(SlicedImp, "Find Maxima...", "prominence=" + Prominence + " output=List")
 
+# Resets the contrast for easier viewing
+SlicedImp.resetDisplayRange()
 # Saves the XZ image and closes to save memory
 FileSaver(SlicedImp).saveAsTiff(os.path.join(OutputPath, FileNameNoExtension + "_XZ.tif"))
 SlicedImp.close()
