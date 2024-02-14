@@ -39,7 +39,7 @@ def analyzeParticles(
 
 	# Defines analyse particles settings
 	AnalyzeParticlesSettings = (
-		"Size=" 
+		"size=" 
 		+ Size_Setting 
 		+ " circularity=" 
 		+ Circularity_Setting 
@@ -210,7 +210,7 @@ Projected.removeScale()
 IJ.setAutoThreshold(Projected, "Default dark")
 IJ.run(Projected, "Convert to Mask", "")
 # Runs analyze particles to get a list of ROIs
-RoiList = analyzeParticles(Projected, "0-Infinity", "0.00-1.00")
+RoiList = analyzeParticles(Projected, "10-Infinity", "0.00-1.00")
 
 # String needed to get the centroid of the ROI
 CentroidString = ["X", "Y"]
