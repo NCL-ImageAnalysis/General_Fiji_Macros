@@ -57,8 +57,6 @@ stdDevsavepath=SD2.getDirectory()+name2
 MeanFile = open(meansavepath,'a+')
 VarFile = open(stdDevsavepath,'a+')
 
-##Sets standard output to be that results file
-sys.stdout = ResultsFile
 
 file_list = os.listdir(image_dir)
 image_dict = {}
@@ -204,7 +202,11 @@ for image_set in DictKeys:
 	##This saves the ROIs to the directory chosen
 	ROI_path = roi_dir+image_set+".zip"	
 	rm = RoiManager.getInstance()
-	rm.runCommand('Save',ROI_path)
+	try:
+		rm.runCommand('Save',ROI_path)
+	except:
+		IJ.error("No ROIs found for "+image_set)
+		continue
 		
 	##This loop goes through all the fluorescence images and gets the mean values-------------------v
 	for fluor_image_filename in image_dict[image_set][1]:
@@ -220,8 +222,8 @@ for image_set in DictKeys:
 		RM.setSelectedIndexes(Ind)
 		##Instance of Analyzer which will be used
 		An = Analyzer(fluor_img)
-		##Sets measurements taken to mean only
-		An.setMeasurements(2)
+		##Sets measurements taken to mean and stdDev
+		An.setMeasurements(2+4)
 		##Measures mean for all ROIs
 		measurement = RM.multiMeasure(fluor_img)
 		##Gets mean out of results table and adds it to a list-v
@@ -252,6 +254,7 @@ for image_set in DictKeys:
 			bgresults = Analyzer.getResultsTable()
 			bgmean = bgresults.getValue(1,0)
 			##Goes through the list of cells and prints the mean fluorescence minus the background-v
+			sys.stdout=MeanFile
 			print fluor_image_filename,",","Subtracted Background:"+str(bgmean),",",
 			for value in mean_list:
 				print value-bgmean,",",
