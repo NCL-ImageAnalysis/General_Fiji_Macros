@@ -3,7 +3,7 @@
 #@ File (label="Input Roi:", style="directory") Roi_Folder
 #@ File (label="Output", style="file") Output_File
 
-import os, sys
+import os, sys, re
 
 from ij import ImagePlus
 from ij.plugin.filter import Analyzer
@@ -47,7 +47,7 @@ def getRoiMeasurements(SampleRoi, Image, Measurement_Options):
 InputPath = Image_Folder.getPath()
 RoiPath = Roi_Folder.getPath()
 OutputPath = Output_File.getPath()
-RoiMan = RoiManager()
+RoiMan = RoiManager().getInstance()
 # This section sets the measurements that will be used
 AnalyzerClass = Analyzer()
 # Gets original measurements to reset later
@@ -60,7 +60,12 @@ AnalyzerClass.setMeasurements(
 OutputFile = open(OutputPath, "w")
 sys.stdout = OutputFile
 
-for ImageFilename in os.listdir(InputPath):
+HomeFiles = os.listdir(InputPath)
+tiff_re_Obj = re.compile(r'\.tif{1,2}$', flags=re.IGNORECASE)
+# Filters the list of files to only include tif files
+TifFiles = filter(tiff_re_Obj.search, HomeFiles)
+
+for ImageFilename in TifFiles:
 	Imp = ImagePlus(os.path.join(InputPath, ImageFilename))
 	splitfilename = "_".join(ImageFilename.split("_")[:-1])
 	RoiMan.runCommand("Open", os.path.join(RoiPath, splitfilename+".zip"))
@@ -78,4 +83,5 @@ for ImageFilename in os.listdir(InputPath):
 	RoiMan.reset()
 
 OutputFile.close()
+RoiMan.close()
 AnalyzerClass.setMeasurements(OriginalMeasurements)
