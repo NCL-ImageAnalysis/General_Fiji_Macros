@@ -7,7 +7,7 @@ from ij import IJ, ImagePlus, WindowManager
 from ij.plugin import RoiEnlarger
 from ij.plugin.frame import RoiManager
 from ij.plugin.filter import Analyzer
-from ij.measure import ResultsTable
+from ij.measure import ResultsTable, Measurements
 from ij.gui import GenericDialog,NonBlockingGenericDialog
 from ij.io import DirectoryChooser,FileSaver,SaveDialog
 from fiji.util.gui import GenericDialogPlus
@@ -18,6 +18,8 @@ NormOut = sys.stdout
 
 ##Gets the original settings for measurements
 original_setting = Analyzer().getMeasurements()
+
+MeasurementSetting = Measurements.MEAN + Measurements.STD_DEV + Measurements.MIN_MAX
 
 ##Opens a dialog that lets user choose the folder containing images they want to analyse-v
 image_dir = DirectoryChooser("Choose Folder Containing Images").getDirectory()
@@ -77,12 +79,14 @@ settings_dialog.addMessage("Input size constraints for particle analysis (pixels
 settings_dialog.addStringField("Minimum", "0")
 settings_dialog.addStringField("Maximum", "Infinity")
 settings_dialog.addCheckbox("Subtract Background", True)
+settings_dialog.addCheckbox("Normalise variance by max intensity of cell", True)
 settings_dialog.addRadioButtonGroup("Choose Segmentation Wavelength", WaveList, 1, len(WaveList), WaveList[0])
 settings_dialog.addRadioButtonGroup("Segmentation Type", ["Phase Contrast", "Fluorescence"], 1, 2, "Phase Contrast")
 settings_dialog.showDialog()
 minsize = settings_dialog.getNextString()
 maxsize = settings_dialog.getNextString()
 SubBackground = settings_dialog.getNextBoolean()
+Normalise = settings_dialog.getNextBoolean()
 BrightWave = settings_dialog.getNextRadioButton()
 SegmentationType = settings_dialog.getNextRadioButton()
 if settings_dialog.wasCanceled():
@@ -223,13 +227,14 @@ for image_set in DictKeys:
 		##Instance of Analyzer which will be used
 		An = Analyzer(fluor_img)
 		##Sets measurements taken to mean and stdDev
-		An.setMeasurements(2+4)
+		An.setMeasurements(MeasurementSetting)
 		##Measures mean for all ROIs
 		measurement = RM.multiMeasure(fluor_img)
 		##Gets mean out of results table and adds it to a list-v
 		x = 0
 		mean_list = []
 		stdDev_list=[]
+		max_list = []
 		Headings = measurement.getHeadings()
 		for Column in Headings:
 			Index = measurement.getColumnIndex(Column)
@@ -238,6 +243,8 @@ for image_set in DictKeys:
 				mean_list.append(Val[0])
 			elif re.search("StdDev",Column):
 				stdDev_list.append(Val[0])
+			elif re.search("Max",Column):
+				max_list.append(Val[0])
 		##Gets mean out of results table and adds it to a list-^
 		if SubBackground:
 			##Combines ROI
@@ -266,11 +273,21 @@ for image_set in DictKeys:
 				print value,",",
 			print ""
 		##Goes through the list of cells and prints the variance-v
+		
 		sys.stdout=VarFile
-		print fluor_image_filename,",",
-		for value in stdDev_list:
-			print value*value,",",
-		print ""
+		if Normalise:
+			print fluor_image_filename,",",
+			iterations = 0
+			for value in stdDev_list:
+				##Normalises the variance by the square of the max intensity of the cell
+				print value**2/(max_list[iterations]**2),",",
+				iterations += 1
+			print ""
+		else:
+			print fluor_image_filename,",",
+			for value in stdDev_list:
+				print value**2,",",
+			print ""
 		##Goes through the list of cells and prints the variance-^
 	##This loop goes through all the fluorescence images and gets the mean and standard deviation values-------------------^
 
