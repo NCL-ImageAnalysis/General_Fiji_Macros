@@ -3,7 +3,7 @@ message: "If you use this software, please cite it as below."
 authors:
 - family-names: James
   given-names: Grimshaw
-orcid: https://orcid.org/0000-0002-1276-9912
+  orcid: https://orcid.org/0000-0002-1276-9912
 title: "James Grimshaw General Fiji Macros"
 version: 1.0.1
 date-released: 2024-08-13
