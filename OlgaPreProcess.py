@@ -1,3 +1,7 @@
+#@ Integer (label="DAPI Channel") dapichannel
+#@ String (label="Projection type", choices={"max", "sum"}) projectiontype
+#@ Float (label="Nuclei Size Threshold") nuclei_size
+
 from ij import IJ, ImagePlus
 from ij.plugin import ZProjector
 
@@ -36,14 +40,18 @@ def analyzeParticles(
 	return RoiList
 
 imp = IJ.getImage()
-projected = ZProjector.run(imp, "max")
-projected.setC(3)
+
+# Z Project the image
+projected = ZProjector.run(imp, projectiontype)
+
+# Selects the dapi channel
+projected.setC(dapichannel)
 dapi = projected.crop("whole-slice")
 IJ.run(dapi, "Gaussian Blur...", "sigma=40")
 JustNuclei = dapi.duplicate()
 IJ.setAutoThreshold(JustNuclei, "Yen dark")
 IJ.run(JustNuclei, "Convert to Mask", "")
-nucleirois = analyzeParticles(JustNuclei, "100-Infinity", "0-1.0")
+nucleirois = analyzeParticles(JustNuclei, str(nuclei_size) + "-Infinity", "0-1.0")
 for roi in nucleirois:
 	projected.setRoi(roi)
 	IJ.run(projected, "Clear", "stack")
