@@ -48,9 +48,9 @@ def main():
 	for line in LineRoiList:
 		if line.isLine():
 			X, Y = getLineProfile(Image, line)
-			outdict["X"+str(i)] = X
 			outdict["Y"+str(i)] = Y
 			if len(X) > maxlength:
+				outdict["X"] = X
 				maxlength = len(X)
 			i += 1
 	
@@ -59,11 +59,11 @@ def main():
 	# Add the data to the ResultsTable
 	for l in range(maxlength):
 		for ii in range(1, i):
+			if ii == 1:
+				Results.addValue("X", outdict["X"][l])
 			try:
-				Results.addValue("X"+str(ii), outdict["X"+str(ii)][l])
 				Results.addValue("Y"+str(ii), outdict["Y"+str(ii)][l])
 			except IndexError:
-				Results.addValue("X"+str(ii), "NaN")
 				Results.addValue("Y"+str(ii), "NaN")
 		if l < maxlength - 1:
 			Results.incrementCounter()
