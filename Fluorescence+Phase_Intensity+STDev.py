@@ -148,6 +148,7 @@ for image_set in DictKeys:
 	while Analysis_done == False:
 		##Creates options for Analyze particles function using user input for min and max size.
 		options = "size=" + str(minsize) + "-" + str(maxsize) + " exclude clear include add pixel"
+		IJ.run(phase_img, "Remove Overlay", "")
 		##Runs the Analyze particles function
 		IJ().run(phase_img,"Analyze Particles...", options)
 		##Gets access to the ROI manager
