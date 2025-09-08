@@ -1,191 +1,207 @@
-## Author: Dr James Grimshaw | Newcastle University | james.grimshaw@newcastle.ac.uk
-# Need to make sure to register and crop images before they go out of focus before inputing into this macro
+#@ File (label="Folder containing images:", style="directory") InDir
+#@ File (label="CSV output folder:", style="directory") OutFile
+#@ Integer (label="Phase Channel:") Phase_Channel
 
-#@ File (label="Input:", style="directory") InputFolder
-#@ File (label="Output:", style="directory") OutputFolder
+import re, os
 
-import os, re, time
-from ij import IJ, ImagePlus
-from ij.plugin.frame import RoiManager
-from ij.measure import Measurements, ResultsTable
-from java.lang import IllegalArgumentException
+from ij import IJ
+from ij.measure import ResultsTable, Measurements
+from ij.plugin import Duplicator, RoiEnlarger
+from ij.plugin.filter import Analyzer
+from ij.macro import Variable
 
-
-def getFilteredFileList(Directory, extension_pattern):
-	"""Returns files in the folder that match the extension pattern
-
-	Args:
-		Directory (str): Path to the directory
-		extension_pattern (str): regex pattern to match the extension
-
-	Returns:
-		[str]: File names that match the extension pattern
-	"""	
-	# Gets a list of filenames in the directory
-	UnfilteredList = os.listdir(Directory)
-	# Creates a regex object to search for matching extensions
-	regexObj = re.compile(extension_pattern, flags=re.IGNORECASE)
-	# Filters the list of files to only include matching files
-	FilteredList = filter(regexObj.search, UnfilteredList)
-	# Checks that one or more matching files are present in the folder
-	if len(FilteredList) == 0:
-		IJ.error("No matching files were detected")
-		return False
-	return FilteredList
-
-def filenameCommonality(FileList):
-	"""Gets the common substring of a list of strings
+def analyzeParticles(
+		Binary_Image,
+		size_min = "0.00",
+		size_max = "Infinity",
+		circ_min = "0.00",
+		circ_max = "1.00",
+		exclude=True,
+		stack=False,
+		pixel=False
+		):
+	"""Runs analyze particles on the binary image, returning the ROI
 
 	Args:
-		ImageList ([str]): List of filenames
+		Binary_Image (ij.ImagePlus): Segmented binary image
+		size_min (str): Min size setting for analyse particles. Defaults to "0.00"
+		size_max (str): Max size setting for analyse particles. Defaults to "Infinity"
+		circ_min (str): Min circularity setting for analyse particles. Defaults to "0.00"
+		circ_max (str): Max circularity setting for analyse particles. Defaults to "1.00"
+		exclude (bool): Whether to exclude certain particles from analysis. Defaults to True
+		stack (bool): Whether to include stack in analysis. Defaults to False
+		pixel (bool): Whether to include pixel in analysis. Defaults to False
 
 	Returns:
-		str: Common filename substring
+		[PolygonRoi]: Outputted Rois
 	"""	
-	
-	if len(FileList) < 2:
+
+	# Defines analyse particles settings
+	AnalyzeParticlesSettings = (
+		"size=" 
+		+ size_min
+		+ "-" 
+		+ size_max
+		+ " circularity=" 
+		+ circ_min
+		+ "-" 
+		+ circ_max
+		+ " overlay"
+	)
+	if exclude:
+		AnalyzeParticlesSettings += " exclude"
+	if stack:
+		AnalyzeParticlesSettings += " stack"
+	if pixel:
+		AnalyzeParticlesSettings += " pixel"
+	# Runs the analyze particles command to get ROI. 
+	# Done by adding to the overlay in order to not have ROIManger shown to user
+	IJ.run(Binary_Image, "Analyze Particles...", AnalyzeParticlesSettings)
+	# Gets the Overlayed ROIs from analyze particles
+	Overlayed_Rois = Binary_Image.getOverlay()
+	# Takes the overlay and turns it into an array of ROI
+	RoiList = Overlayed_Rois.toArray()
+	# Removes this overlay to clean up the image
+	IJ.run(Binary_Image, "Remove Overlay", "")
+	return RoiList
+
+
+
+def getRoiMeasurements(SampleRoi, Image, Measurement_Options):
+	"""Gets the given measurements of the provided Roi for the given image
+
+	Args:
+		SampleRoi (ij.gui.Roi): Roi to be analysed
+		Image (ij.ImagePlus): Image to be analysed
+		Measurement_Options ([str]) or ([ij.measure.Measurements]): Measurements to be taken in the form of either strings of the column headings or ij.measure.Measurements integers
+
+	Returns:
+		[float]: Dictionary of measurements with column headings as titles
+	"""	
+
+	# This dictionary converts Measurement_Options to the corresponding column names in the results table
+	Measurement_Dict = {
+		Measurements.ADD_TO_OVERLAY: [None],
+		Measurements.AREA: ['Area'],
+		Measurements.AREA_FRACTION: ['%Area'],
+		Measurements.CENTER_OF_MASS: ['XM', 'YM'],
+		Measurements.CENTROID: ['X', 'Y'],
+		Measurements.CIRCULARITY: ['Circ.', 'AR', 'Round', 'Solidity'],
+		Measurements.ELLIPSE: ['Major', 'Minor', 'Angle'],
+		Measurements.FERET: ['Feret', 'FeretX', 'FeretY', 'FeretAngle', 'MinFeret'],
+		Measurements.INTEGRATED_DENSITY: ['IntDen'],
+		Measurements.INVERT_Y: [None],
+		Measurements.KURTOSIS: ['Kurt'],
+		Measurements.LABELS: ['Label'],
+		Measurements.LIMIT: [None],
+		Measurements.MAX_STANDARDS: [None],
+		Measurements.MEAN: ['Mean'],
+		Measurements.MEDIAN: ['Median'],
+		Measurements.MIN_MAX: ['Min', 'Max'],
+		Measurements.MODE: ['Mode'],
+		Measurements.NaN_EMPTY_CELLS: [None],
+		Measurements.PERIMETER: ['Perim.'],
+		Measurements.RECT: ['ROI_X', 'ROI_Y', 'ROI_Width', 'ROI_Height'],
+		Measurements.SCIENTIFIC_NOTATION: [None],
+		Measurements.SHAPE_DESCRIPTORS: ['Circ.', 'AR', 'Round', 'Solidity'],
+		Measurements.SKEWNESS: ['Skew'],
+		Measurements.SLICE: [None],
+		Measurements.STACK_POSITION: [None],
+		Measurements.STD_DEV: ['StdDev']
+	}
+
+	# Initialises a new empty results table
+	RTable = ResultsTable()
+	# Initialises an Analyzer object using 
+	# the image and the empty results table
+	try:
+		# If input list is of ij.measure.Measurements will use those measurements for the analyzer
+		Measurement_int = sum(Measurement_Options)
+		An = Analyzer(Image, Measurement_int, RTable)
+	except TypeError:
+		# Otherwise will just use global measurement options
+		Measurement_int = None
+		An = Analyzer(Image, RTable)
+	# Selects the roi on the image
+	Image.setRoi(SampleRoi)
+	# Takes the measurements
+	An.measure()
+	# If the measurements were not specified
+	# will use input column headings
+	if Measurement_int == None:
+		Output_List = Measurement_Options
+	# Otherwise will get measurement options from dictionary
+	else:
+		Output_List = []
+		for Option in Measurement_Options:
+			Output_List += Measurement_Dict[Option]
+	# Takes the desired results from the results table and adds to the dictionary
+	OutputDict = {}
+	for Option in Output_List:
+		if Option != None:
+			OutputDict[Option] = RTable.getValue(Option, 0)
+	# Clears the results table
+	RTable.reset()
+	# Clears the roi from the image
+	Image.resetRoi()
+	return OutputDict
+
+def dict2ResultsTable(results_dict):
+	RT = ResultsTable()
+	for key in results_dict.keys():
+		VarList = [Variable(var) for var in results_dict[key]]
+		RT.setColumn(key, VarList)
+	return RT
+
+def try_append_to_dict(dictionary, measurement, filename, value):
+	try:
+		dictionary[measurement][filename].append(value)
+	except KeyError:
 		try:
-			return FileList[1]
-		except IndexError:
-			return ""
-	# Initialising variables
-	Commonality = ""
-	StringLength = 1
-	# Iterates through each character of the first filename
-	while StringLength < len(FileList[0]):
-		# Gets the substring of the first filename
-		Substring = FileList[0][:StringLength]
-		# Iterates through every other filename in the list
-		for Image in FileList[1:]:
-			# If the substrings ever do not match 
-			# will return the common substring
-			if Image[:StringLength] != Substring:
-				return Commonality
-		# If the substrings match for all filenames
-		# will set the commonality to the substring
-		Commonality = Substring
-		# Increments the string length
-		StringLength += 1
-	return Commonality
+			dictionary[measurement][filename] = [value]
+		except KeyError:
+			dictionary[measurement] = {filename: [value]}
 
-# Gets any open ROI manager, gets the ROI contained and closes it before starting the macro
-OldManager = RoiManager(False).getInstance()
-if OldManager != None:
-	OldRoi = OldManager.getRoisAsArray()
-	OldManager.close()
 
-# Defines Settings for measurement of images
-Settings = Measurements.AREA | Measurements.ELLIPSE | Measurements.MEAN 
+def main(inputpath, outputpath, phase_channel):
+	regexitem = re.compile(r"\.nd2$|\.tif{1,2}")
+	filepaths = [os.path.join(inputpath, filepath) for filepath in os.listdir(inputpath) if regexitem.search(filepath)]
+	OutDictionary = {}
+	for filepath in filepaths:
+		imp = IJ.openImage(filepath)
+		phase_imp = Duplicator().run(imp, phase_channel, phase_channel, 1, imp.getNSlices(), 1, imp.getNFrames())
+		# Thresholds the image
+		IJ.run(phase_imp, "Convert to Mask", "method=Default background=Light calculate black")
+		roi_list = analyzeParticles(phase_imp, size_min="200.00", stack=True, pixel=True)
+		# This checks for any duplicates and errors out if one is found
+		slicelist = [roi.getZPosition() for roi in roi_list]
+		duplicates = [position for position in set(slicelist) if slicelist.count(position) > 1]
+		if len(duplicates) > 0:
+			IJ.log("Found duplicate ROIs at positions: " + ", ".join(map(str, duplicates)) + " in " + filepath)
+			continue
+		for roi in roi_list:
+			expanded_roi = RoiEnlarger.enlarge(roi, 5)
+			inverted_roi = expanded_roi.getInverse(imp)
+			imp.setSlice(roi.getZPosition())
+			for channel in range(1, imp.getNChannels() + 1):
+				imp.setRoi(roi)
+				imp.setC(channel)
+				# Measure area and intensity
+				measurements_dict = getRoiMeasurements(roi, imp, [Measurements.AREA, Measurements.MEAN])
+				area = measurements_dict['Area']
+				sub_dict = getRoiMeasurements(inverted_roi, imp, [Measurements.MEAN])
+				if channel == phase_channel:
+					mean_intensity = sub_dict['Mean'] - measurements_dict['Mean']
+				else:
+					mean_intensity = measurements_dict['Mean'] - sub_dict['Mean']
+				try_append_to_dict(OutDictionary, "Channel-" + str(channel), filepath, mean_intensity)
+			try_append_to_dict(OutDictionary, "Area", filepath, area)
+		imp.close()
+	for measurement in OutDictionary:
+		RT = dict2ResultsTable(OutDictionary[measurement])
+		RT.save(os.path.join(outputpath, measurement + ".csv"))
 
-# Gets the directory paths for input/output folders
-ImagesDir = InputFolder.getPath()
-SaveDirPath = OutputFolder.getPath()
-
-# Gets the data and time 
-LocalTime = time.localtime()
-# Creates a string with the data and time to add to filename
-TimeAddition = time.strftime("%Y-%m-%d_%H-%M-%S_", LocalTime) 
-# Adds the date and time to the filepath for saving the data
-SaveTimePath = os.path.join(SaveDirPath, TimeAddition)
-
-# Defines the pattern for searching for tif/tiff files
-Extension_Pattern = r'\.tif{1,2}$'
-FilteredFiles = getFilteredFileList(ImagesDir, Extension_Pattern)
-# Gets the common filename substring
-CommonFilename = filenameCommonality(FilteredFiles)
-
-# Defines a new Roi Manager instance for use by the Analyse particles function
-CurrentManager = RoiManager()
-# Hides the manager
-CurrentManager.hide()
-
-# List of tables used. Corresponds to Length, Width, Area, Intensity
-TableList = (ResultsTable(), ResultsTable(), ResultsTable(), ResultsTable())
-
-# Iterates though images in the path list
-for ImageName in FilteredFiles:
-	# Gets the Image as an ImagePlus
-	imp = ImagePlus(os.path.join(ImagesDir,ImageName))
-	OutputName = ImageName.replace(CommonFilename, "")
-	# Gets the Number of Slices
-	Num_Slices = imp.getStackSize()
-	# Duplicates the image for thresholding
-	Thresh_imp = imp.duplicate()
-	# Thresholds the image
-	IJ.run(Thresh_imp, "Convert to Mask", "method=Default background=Light calculate black")
-	# Runs analyze particles to get cell ROI
-	IJ.run(Thresh_imp, "Analyze Particles...", "size=200-Infinity exclude clear include add stack pixel")
-	# Closes the thresholding image (not needed once have ROIs)
-	Thresh_imp.close() 
-	# Gets the indexes in the Roi Manager to all created ROIs
-	ROI_Indexes = CurrentManager.getIndexes()
-	# Gets the number of ROIs
-	Num_ROI = len(ROI_Indexes)
-	# Increases the Rows in the results tables untill they match the number of ROIs
-	while Num_Slices > TableList[3].size():
-		for Table in TableList:
-			Table.incrementCounter()
-	# Iterates through ROI indexes
-	for Index in ROI_Indexes:
-		# Gets the Name of the ROI (Needed for certain functions)
-		ROI_Name = CurrentManager.getName(Index)
-		# Gets the slice the ROI was assigned to
-		SliceNumber = CurrentManager.getSliceNumber(ROI_Name)
-		# Sets the image to the Slice of the ROI
-		imp.setZ(SliceNumber)
-		# Selects the current ROI to the image
-		CurrentManager.select(imp, Index)
-		
-		# Essentially runs the measure command
-		Roi_Stats = imp.getStatistics(Settings)
-		
-		# Measures the intensity (mean gray value) of the selected cell
-		Roi_Intensity = Roi_Stats.mean
-		# Deselects and removes the ROI selecting the cell
-		imp.deleteRoi()
-		# Gets the intensity of the overall image
-		Overall_Intensity = imp.getStatistics(Measurements.MEAN).mean
-		# Gets the difference in intensity values from the overall image to the selected cell
-		Intensity_Difference = abs(Overall_Intensity-Roi_Intensity)
-
-		# Creates a list of data points to be added to the tables.
-		# Corresponds to Length, Width, Area, Intensity
-		Data_List = [Roi_Stats.major, Roi_Stats.minor, Roi_Stats.area, Intensity_Difference]
-
-		# Goes though the tables in the Table List
-		for Table in range(0, 4):
-			# Adds the slice number to the table
-			TableList[Table].setValue('Slice', SliceNumber-1, SliceNumber)
-
-			# Try except clause is here in case the column does not yet exist
-			try:
-				# Gets the current value of the row to be modified. Should be 0.0
-				PrexistingVal = (TableList[Table].getValue(OutputName, SliceNumber-1))
-			except IllegalArgumentException:
-				PrexistingVal = 0.0
-
-			# Checks that the Prexisting value was 0. If not then there are multiple ROI assigned to a single slice
-			if PrexistingVal == 0:
-				TableList[Table].setValue(OutputName, SliceNumber-1, Data_List[Table])
-
-			# If there are multiple ROI assigned to a single slice then will set the value to NaN
-			else:
-				TableList[Table].setValue(OutputName, SliceNumber-1, 'NaN')
-
-	# Resets the ROI manager between Images
-	CurrentManager.reset()
-
-# Closes the ROI Manager
-CurrentManager.close()
-
-# Saves the Results Tables
-TableList[0].save(SaveTimePath+'Length.csv')
-TableList[1].save(SaveTimePath+'Width.csv')
-TableList[2].save(SaveTimePath+'Area.csv')
-TableList[3].save(SaveTimePath+'Intensity.csv')
-
-# If there was an open ROI Manager when the macro was run, this section will Re-open it
-if OldManager != None:
-	NewOldManger = RoiManager()
-	for R in OldRoi:
-		NewOldManger.addRoi(R)
+if __name__ == "__main__":
+	InPath = InDir.getPath()
+	OutPath = OutFile.getPath()
+	main(InPath, OutPath, Phase_Channel)
