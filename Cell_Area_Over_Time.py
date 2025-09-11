@@ -179,13 +179,21 @@ def main(inputpath, outputpath, phase_channel):
 		if len(duplicates) > 0:
 			IJ.log("Found duplicate ROIs at positions: " + ", ".join(map(str, duplicates)) + " in " + filepath)
 			continue
+		x = 0
 		for roi in roi_list:
 			expanded_roi = RoiEnlarger.enlarge(roi, 5)
 			inverted_roi = expanded_roi.getInverse(imp)
-			imp.setSlice(roi.getZPosition())
+			if imp.getNFrames() > imp.getNSlices()
+				imp.setSlice(roi.getZPosition())
+			else:
+				imp.setT(roi.getZPosition())
 			for channel in range(1, imp.getNChannels() + 1):
 				imp.setRoi(roi)
 				imp.setC(channel)
+				x+=1
+				if x==32:
+					imp.show()
+					return
 				# Measure area and intensity
 				measurements_dict = getRoiMeasurements(roi, imp, [Measurements.AREA, Measurements.MEAN])
 				area = measurements_dict['Area']
