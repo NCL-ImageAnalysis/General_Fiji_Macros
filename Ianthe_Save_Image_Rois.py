@@ -15,6 +15,7 @@ def main(InputPath, OutputPath):
 	regexpattern = re.compile(r"\.tif{1,2}$|\.czi$", re.IGNORECASE)
 	for root, dirs, files in os.walk(InputPath):
 		files = [f for f in files if regexpattern.search(f)]
+		files = [f for f in files if not f.startswith("._")]
 		for f in files:
 			roi_filename = ".".join(f.split(".")[:-1]) + ".roi"
 			Outdir = root.replace(InputPath, OutputPath)
