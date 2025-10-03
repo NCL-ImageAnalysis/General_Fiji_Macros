@@ -19,7 +19,7 @@ NormOut = sys.stdout
 ##Gets the original settings for measurements
 original_setting = Analyzer().getMeasurements()
 
-MeasurementSetting = Measurements.MEAN + Measurements.STD_DEV + Measurements.MIN_MAX
+MeasurementSetting = Measurements.MEAN + Measurements.STD_DEV + Measurements.MIN_MAX + Measurements.AREA
 
 ##Opens a dialog that lets user choose the folder containing images they want to analyse-v
 image_dir = DirectoryChooser("Choose Folder Containing Images").getDirectory()
@@ -55,9 +55,19 @@ if name2==None:
 ##Gets path for where to save data
 stdDevsavepath=SD2.getDirectory()+name2
 
+SD3=SaveDialog('Save Area data as...','','.csv')
+##Gets name user chose
+name3=SD3.getFileName()
+##Will escape if Cancel is hit and no file is chosen
+if name3==None:
+	sys.exit('Save Location Not Chosen')
+##Gets path for where to save data
+areaSavePath=SD3.getDirectory()+name3
+
 ##Opens the files that output will be read into
 MeanFile = open(meansavepath,'a+')
 VarFile = open(stdDevsavepath,'a+')
+AreaFile = open(areaSavePath,'a+')
 
 
 file_list = os.listdir(image_dir)
@@ -236,6 +246,7 @@ for image_set in DictKeys:
 		mean_list = []
 		stdDev_list=[]
 		max_list = []
+		area_list = []
 		Headings = measurement.getHeadings()
 		for Column in Headings:
 			Index = measurement.getColumnIndex(Column)
@@ -246,6 +257,8 @@ for image_set in DictKeys:
 				stdDev_list.append(Val[0])
 			elif re.search("Max",Column):
 				max_list.append(Val[0])
+			elif re.search("Area",Column):
+				area_list.append(Val[0])
 		##Gets mean out of results table and adds it to a list-^
 		if SubBackground:
 			##Combines ROI
@@ -289,6 +302,11 @@ for image_set in DictKeys:
 			for value in stdDev_list:
 				print value**2,",",
 			print ""
+		sys.stdout=AreaFile
+		print fluor_image_filename,",",
+		for value in area_list:
+			print value,",",
+		print ""
 		##Goes through the list of cells and prints the variance-^
 	##This loop goes through all the fluorescence images and gets the mean and standard deviation values-------------------^
 
