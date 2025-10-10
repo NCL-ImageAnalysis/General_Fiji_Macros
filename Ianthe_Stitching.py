@@ -14,6 +14,9 @@ from ij import IJ, ImagePlus
 from ij.io import FileSaver
 from ij.plugin import RGBStackMerge
 
+from loci.formats import ImageReader
+from loci.formats.services import OMEXMLServiceImpl
+
 inpath = InputFolder.getPath()
 outpath = OutputFolder.getPath()
 
@@ -28,6 +31,50 @@ def getFileDict(root, files, regexpattern):
 			except KeyError:
 				celldict[matchobj.group(1)] = [os.path.join(root, file)]
 	return celldict
+
+def createTileConfig(folder, regexpattern=None):
+	base = "Information|Image|S|Scene|Position|"
+	filedict = {}
+	xlist = []
+	ylist = []
+	zlist = []
+	filenames = os.listdir(folder)
+	if regexpattern:
+		filenames = [f for f in filenames if re.search(regexpattern, f, re.IGNORECASE)]
+	for fn in filenames:
+		fp = os.path.join(folder, fn)
+		MetaReader = ImageReader()
+		Metadata = OMEXMLServiceImpl().createOMEXMLMetadata()
+		MetaReader.setMetadataStore(Metadata)
+		MetaReader.setId(fp)
+		sizeX = Metadata.getPixelsPhysicalSizeX(0).value()
+		sizeY = Metadata.getPixelsPhysicalSizeY(0).value()
+		sizeZ = Metadata.getPixelsPhysicalSizeZ(0).value()
+		GlobalMetadata = MetaReader.getGlobalMetadata()
+		posX = GlobalMetadata[base + "X"]
+		posY = GlobalMetadata[base + "Y"]
+		posZ = GlobalMetadata[base + "Z"]
+		MetaReader.close()
+		posX = float(posX)
+		posY = -float(posY)
+		posZ = float(posZ)
+		xlist.append(posX)
+		ylist.append(posY)
+		zlist.append(posZ)
+		filedict[fn] = {"pos_x": posX, "pos_y": posY, "pos_z": posZ}
+	minx = min(xlist)
+	miny = min(ylist)
+	minz = min(zlist)
+
+	with open(os.path.join(folder, "TileConfiguration.txt"), "w") as f:
+		f.write("# Define the number of dimensions we are working on\n")
+		f.write("dim = 3\n\n")
+		f.write("# Define the image coordinates\n")
+		for fn in filenames:
+			adjusted_pos_x = (filedict[fn]["pos_x"] - minx) / sizeX
+			adjusted_pos_y = (filedict[fn]["pos_y"] - miny) / sizeY
+			adjusted_pos_z = (filedict[fn]["pos_z"] - minz) / sizeZ
+			f.write(fn + "; ; ("+str(adjusted_pos_x)+", "+str(adjusted_pos_y)+", "+str(adjusted_pos_z)+")\n")
 
 def createImageStackFromFolder(folder, regexpattern=None):
 	if not os.path.exists(folder):
@@ -78,10 +125,12 @@ def main(InputPath,
 		IJ.error("Input folder does not exist: " + InputPath)
 		return
 	# Gets the stitching settings that will be used for all images
-	StitchingSetttings = str("fusion_method=[" + fusion_method + 
+	StitchingSetttings = str("layout_file=TileConfiguration.txt" + 
+				" fusion_method=[" + fusion_method + 
 				"] regression_threshold=" + str(regression_threshold) + 
 				" max/avg_displacement_threshold=" + str(max_avg_displacement_threshold) +
 				" absolute_displacement_threshold=" + str(absolute_displacement_threshold) +
+				" compute_overlap" +
 				" computation_parameters=[" + computation_parameters + "]")
 	if subpixel_accuracy:
 		StitchingSetttings += " subpixel_accuracy"
@@ -114,10 +163,11 @@ def main(InputPath,
 					if not os.path.exists(tempdir):
 						os.makedirs(tempdir)
 					shutil.move(file, os.path.join(tempdir, splitfile[1]))
+				createTileConfig(tempdir, regexpattern=r"\.czi$")
 				try:
 					# This section runs the stitching command-v
 					IJ.run("Grid/Collection stitching", 
-					"type=[Unknown position] order=[All files in directory] directory=[" +
+					"type=[Positions from file] order=[Defined by TileConfiguration] directory=[" +
 					tempdir + "] " +
 					StitchingSetttings +
 					" image_output=[Write to disk] output_directory=["+
