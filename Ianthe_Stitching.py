@@ -183,13 +183,17 @@ def main(InputPath,
 					# Clean up the temporary directorys
 					shutil.rmtree(newpath)
 				except Exception as e:
-					print("Error during stitching for cell {}: {}".format(cell, e))
+					print("Error during stitching for cell " + cell + ": " + str(e))
 				# Moving the files back to their original directorys
 				for file in os.listdir(tempdir):
-					shutil.move(os.path.join(tempdir, file), os.path.join(splitfile[0], file))
-				shutil.rmtree(tempdir)
-		
-				
+					try:
+						shutil.move(os.path.join(tempdir, file), os.path.join(splitfile[0], file))
+					except Exception as e:
+						print("Error moving file " + file + " back to original directory: " + splitfile[0] + ": " + str(e))
+				try:
+					shutil.rmtree(tempdir)
+				except Exception as e:
+					print("Error removing temporary directory " + tempdir + ". Please remove manually: " + str(e))
 
 if __name__ == "__main__":
 	main(inpath, 
