@@ -24,6 +24,8 @@ def main(InFolder,
 					os.makedirs(out_folder)
 				saver = FileSaver(zproj)
 				saver.saveAsTiff(os.path.join(out_folder, outfilename))
+	imp.close()
+	zproj.close()
 if __name__ == "__main__":
 	main(inpath,
 		 outpath,
