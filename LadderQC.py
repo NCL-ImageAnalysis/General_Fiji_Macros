@@ -242,6 +242,8 @@ def main(
 		# Rounds the angle to the nearest 5 degrees
 		# Has to be absolute as the lines can be in either direction
 		RoundedAngle = abs(roundToBase(LineAngle, 5))
+		if RoundedAngle >= 180:
+			RoundedAngle -= 180
 		# Adds the angle to a dictionary with the point as the key
 		PointDict[PointItem] = RoundedAngle
 		# Adds the angle to a list of all angles to find the mode
@@ -268,11 +270,16 @@ def main(
 		# Loops though every other list of points to find the furthest apart
 		for SecondPoint in SecondList:
 			# Gets the angle between the two points, has to be absolute as the lines can be in either direction
-			LadderAngle = abs(getAngleBetweenPoints(FirstPoint, SecondPoint))
+			if FirstPoint[0] <= SecondPoint[0]:
+				LadderAngle = getAngleBetweenPoints(FirstPoint, SecondPoint)
+			else:
+				LadderAngle = getAngleBetweenPoints(SecondPoint, FirstPoint)
 			# Gets the distance between the two points
 			LadderDistance = distanceBetweenPoints(FirstPoint[0], FirstPoint[1], SecondPoint[0], SecondPoint[1])
 			# Rounds the angle to the nearest 5 degrees
-			RoundedLadderAngle = roundToBase(LadderAngle, 5)
+			RoundedLadderAngle = abs(roundToBase(LadderAngle, 5))
+			if RoundedLadderAngle >= 180:
+				RoundedLadderAngle -= 180
 			# If the angle is the same as the mode angle and the distance is greater than the current max
 			# Then these are the new furthest apart points
 			if RoundedLadderAngle == ModeAngle and LadderDistance > MaxLadderDistance:
@@ -285,12 +292,13 @@ def main(
 	# Need to use an overlay so it will rotate with the image
 	LineOverlay = Overlay(FeducialLine)
 	Imp.setOverlay(LineOverlay)
-
+	
 	# Rotates the image so the ladder is horizontal
-	IJ.run(Imp, "Arbitrarily...", "angle=" + str(FeducialAngle) + " interpolate stack")
+	IJ.run(Imp, "Arbitrarily...", "angle=" + str(-FeducialAngle) + " interpolate stack")
 	# Gets the Rotated Roi from the overlay
 	RotatedLineOverlay = Imp.getOverlay()
 	RotatedLineRoi = RotatedLineOverlay.get(0)
+	
 	# Removes the overlay to clean up the image
 	Imp.setOverlay(None)
 
@@ -305,7 +313,6 @@ def main(
 	# Crops the image to the single line
 	Imp.setRoi(BoxRoi)
 	LineImage = Imp.crop("stack")
-
 	# Closes the original image to save memory
 	Imp.close()
 
