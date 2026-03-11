@@ -64,7 +64,7 @@ def main(image_dir, save_dir):
 		## Runs specify command to create ROI
 		IJ.run(img, "Specify...", settings)
 		## Runs crop command to crop the image
-		Cropped = img.crop()
+		Cropped = img.crop("stack")
 		## Closes the full size image
 		img.close()
 		save_path = os.path.join(save_dir, ".".join(os.path.basename(image_path).split('.')[:-1])+'.tif')
