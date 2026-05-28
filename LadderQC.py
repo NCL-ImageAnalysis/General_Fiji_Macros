@@ -15,7 +15,7 @@ from ij.gui import Overlay
 from ij.gui import Roi
 from ij.measure import Measurements
 from ij.measure import ResultsTable
-from ij.plugin import ZProjector
+from ij.plugin import ZProjector, Slicer
 from ij.plugin.filter import Analyzer
 # Bioformats modules
 from loci.plugins import BF
@@ -277,7 +277,8 @@ def main(
 			# Gets the distance between the two points
 			LadderDistance = distanceBetweenPoints(FirstPoint[0], FirstPoint[1], SecondPoint[0], SecondPoint[1])
 			# Rounds the angle to the nearest 5 degrees
-			RoundedLadderAngle = abs(roundToBase(LadderAngle, 5))
+			RoundedLadderAngle = abs(roundToBase(LadderAngle, 5)
+)
 			if RoundedLadderAngle >= 180:
 				RoundedLadderAngle -= 180
 			# If the angle is the same as the mode angle and the distance is greater than the current max
@@ -316,12 +317,7 @@ def main(
 	# Closes the original image to save memory
 	Imp.close()
 
-	# Runs the reslice command to get the XZ image similar to orthagonal view
-	IJ.run(LineImage, "Reslice [/]...", "output=" + str(ZDepth) +" start=Top avoid")
-
-	# Gets the resliced image
-	selectWindow("Reslice ")
-	OriginalSlicedImp = IJ.getImage()
+	OriginalSlicedImp = Slicer().reslice(LineImage)
 	# Duplicates the image to only get one slice
 	SlicedImp = OriginalSlicedImp.crop()
 	# Close the original image to save memory
