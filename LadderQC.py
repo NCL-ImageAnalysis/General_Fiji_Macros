@@ -16,7 +16,7 @@ from ij.gui import Roi
 from ij.measure import Measurements
 from ij.measure import ResultsTable
 from ij.plugin import ZProjector, Slicer
-from ij.plugin.filter import Analyzer
+from ij.plugin.filter import Analyzer, MaximumFinder
 # Bioformats modules
 from loci.plugins import BF
 from loci.plugins.in import ImporterOptions
@@ -328,23 +328,20 @@ def main(
 	# Gets the statistics which includes the minimum and maximum intensity of the image
 	ImpStats = SlicedImp.getStatistics()
 	# Sets the prominence for the find maxima command to be half the difference between the min and max intensity
-	Prominence = str((ImpStats.max - ImpStats.min)/2)
+	Prominence = (ImpStats.max - ImpStats.min)/2
 	# Finds the maxima in the image and outputs to a results table
-	IJ.run(SlicedImp, "Find Maxima...", "prominence=" + Prominence + " output=List")
+	polygon = MaximumFinder().getMaxima(SlicedImp.getProcessor(), Prominence, False)
+	MaximaResults = ResultsTable()
+	for index in range(polygon.npoints):
+		MaximaResults.addValue("X", polygon.xpoints[index])
+		MaximaResults.addValue("Y", polygon.ypoints[index])
+		MaximaResults.incrementCounter()
 
 	# Resets the contrast for easier viewing
 	SlicedImp.resetDisplayRange()
 	# Saves the XZ image and closes to save memory
 	FileSaver(SlicedImp).saveAsTiff(os.path.join(OutputPath, FileNameNoExtension + "_XZ.tif"))
 	SlicedImp.close()
-
-	# Gets the results table and copies it so the displayed one can be closed
-	Results = ResultsTable().getResultsTable()
-	MaximaResults = Results.clone()
-	# Needs to reset the table to avoid dialog asking to save
-	Results.reset()
-	# Closes the results table
-	WindowManager.getWindow("Results").close()
 
 	# Calculates the axial step size for each maxima
 	for Row in range(0, MaximaResults.size()):
