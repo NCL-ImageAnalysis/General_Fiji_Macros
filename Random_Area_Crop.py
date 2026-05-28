@@ -23,7 +23,7 @@ def getRandomField(Image, CropSize, ImageScale):
 
 
 # Defines the pattern for searching for nd2 files
-Extension_Pattern = r'\.nd2$'
+Extension_Pattern = r'\.nd2$|\.tif{1,2}$|\.png$|\.jpeg$|\.jpg$|\.czi$'
 
 # Creates dialog that will get input/output folders and settings for splitting channels and timepoints
 GD = GenericDialog("Random Area Crop")
