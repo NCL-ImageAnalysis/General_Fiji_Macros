@@ -317,11 +317,7 @@ def main(
 	# Closes the original image to save memory
 	Imp.close()
 
-	OriginalSlicedImp = Slicer().reslice(LineImage)
-	# Duplicates the image to only get one slice
-	SlicedImp = OriginalSlicedImp.crop()
-	# Close the original image to save memory
-	OriginalSlicedImp.close()
+	SlicedImp = Slicer().reslice(LineImage)
 
 	# Performs gaussian blur to smooth the image
 	IJ.run(SlicedImp, "Gaussian Blur...", "sigma=6")
