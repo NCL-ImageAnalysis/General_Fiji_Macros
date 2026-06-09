@@ -62,7 +62,7 @@ if os.path.exists(ImagesDir) and os.path.exists(SaveDirPath):
 						ChannelObj = re.split(r' - C=', ImpTitle, flags=re.IGNORECASE)
 						Channel = str(int(ChannelObj[1])+1)
 						if SeriesCount > 1:
-							FinalSaveName = FoundFile[1] + '_' + SeriesName+'_w' + Channel + ".TIF"
+							FinalSaveName = FoundFile[1] + '_' + SeriesName+'_w' + Channel + ".tif"
 						else:
 							FinalSaveName = FoundFile[1] + '_w' + Channel + ".TIF"
 						SaveObj = FileSaver(Imp)
