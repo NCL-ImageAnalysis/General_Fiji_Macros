@@ -261,13 +261,14 @@ for image_set in DictKeys:
 				area_list.append(Val[0])
 		##Gets mean out of results table and adds it to a list-^
 		if SubBackground:
-			if len(Ind) > 1:
+			newind = RM.getIndexes()
+			if len(newind) > 1:
 				##Combines ROI
 				RM.runCommand(fluor_img,"Combine")
 				##enlarges combined ROI to avoid fluorescence around cell
 				cur_roi = fluor_img.getRoi()
 			else:
-				cur_roi = RM.getRoi(Ind[0])
+				cur_roi = RM.getRoi(newind[0])
 			enlarged_roi = RoiEnlarger().enlarge(cur_roi,25)
 			##Inverts the ROI so selecting Background not the cells
 			fluor_img.setRoi(enlarged_roi)
