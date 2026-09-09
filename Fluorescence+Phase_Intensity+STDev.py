@@ -22,21 +22,21 @@ original_setting = Analyzer().getMeasurements()
 MeasurementSetting = Measurements.MEAN + Measurements.STD_DEV + Measurements.MIN_MAX + Measurements.AREA
 
 ##Opens a dialog that lets user choose the folder containing images they want to analyse-v
-image_dir = DirectoryChooser("Choose Folder Containing Images").getDirectory()
+image_dir = DirectoryChooser("Folder Containing Images").getDirectory()
 ##Will escape if Cancel is hit and no file is chosen
 if image_dir==None:
 	sys.exit('Image Not Chosen')
 ##Opens a dialog that lets user choose the folder containing images they want to analyse-^
 
 ##Opens a dialog that lets user choose a folder where they want to save their ROI-v
-roi_dir = DirectoryChooser("Choose Where to Save ROI").getDirectory()
+roi_dir = DirectoryChooser("Where to Save ROI").getDirectory()
 ##Will escape if Cancel is hit and no file is chosen
 if roi_dir == None:
 	sys.exit('Directory Not Chosen')
 ##Opens a dialog that lets user choose a folder where they want to save their ROI-^
 
 ##Asks user what to save mean data as and where to save it
-SD1=SaveDialog('Save mean data as...','','.csv')
+SD1=SaveDialog('Mean data save location','','.csv')
 ##Gets name user chose
 name1=SD1.getFileName()
 ##Will escape if Cancel is hit and no file is chosen
@@ -46,7 +46,7 @@ if name1==None:
 meansavepath=SD1.getDirectory()+name1
 
 ##Asks user what to save Variance data as and where to save it
-SD2=SaveDialog('Save Variance data as...','','.csv')
+SD2=SaveDialog('Variance data save location','','.csv')
 ##Gets name user chose
 name2=SD2.getFileName()
 ##Will escape if Cancel is hit and no file is chosen
@@ -55,7 +55,7 @@ if name2==None:
 ##Gets path for where to save data
 stdDevsavepath=SD2.getDirectory()+name2
 
-SD3=SaveDialog('Save Area data as...','','.csv')
+SD3=SaveDialog('Area data save location','','.csv')
 ##Gets name user chose
 name3=SD3.getFileName()
 ##Will escape if Cancel is hit and no file is chosen
@@ -84,17 +84,22 @@ for CheckFilename in file_list:
 WaveList.sort()
 
 ##Allows user to input size restrictions for Particle analysis
-settings_dialog = GenericDialog("Input Size Restrictions")
-settings_dialog.addMessage("Input size constraints for particle analysis (pixels^2)")
+settings_dialog = GenericDialog("Segmentation Settings")
+settings_dialog.addMessage("Size constraints for particle analysis (pixels^2)")
 settings_dialog.addStringField("Minimum", "0")
 settings_dialog.addStringField("Maximum", "Infinity")
+settings_dialog.addMessage("Circularity constraints for particle analysis")
+settings_dialog.addNumericField("Minimum", 0.0)
+settings_dialog.addNumericField("Maximum", 1.0)
 settings_dialog.addCheckbox("Subtract Background", True)
 settings_dialog.addCheckbox("Normalise variance by max intensity of cell", True)
-settings_dialog.addRadioButtonGroup("Choose Segmentation Wavelength", WaveList, 1, len(WaveList), WaveList[0])
+settings_dialog.addRadioButtonGroup("Segmentation Wavelength", WaveList, 1, len(WaveList), WaveList[0])
 settings_dialog.addRadioButtonGroup("Segmentation Type", ["Phase Contrast", "Fluorescence"], 1, 2, "Phase Contrast")
 settings_dialog.showDialog()
 minsize = settings_dialog.getNextString()
 maxsize = settings_dialog.getNextString()
+mincirc = settings_dialog.getNextNumber()
+maxcirc = settings_dialog.getNextNumber()
 SubBackground = settings_dialog.getNextBoolean()
 Normalise = settings_dialog.getNextBoolean()
 BrightWave = settings_dialog.getNextRadioButton()
@@ -157,7 +162,7 @@ for image_set in DictKeys:
 	skipcheck = False
 	while Analysis_done == False:
 		##Creates options for Analyze particles function using user input for min and max size.
-		options = "size=" + str(minsize) + "-" + str(maxsize) + " exclude clear include add pixel"
+		options = "size=" + str(minsize) + "-" + str(maxsize) + " circularity=" + str(mincirc) + "-" + str(maxcirc) + " exclude clear include add pixel"
 		IJ.run(phase_img, "Remove Overlay", "")
 		##Runs the Analyze particles function
 		IJ().run(phase_img,"Analyze Particles...", options)
@@ -175,6 +180,9 @@ for image_set in DictKeys:
 		gd.addMessage("Size constraints for particle analysis (pixels^2)")
 		gd.addStringField("Minimum", minsize)
 		gd.addStringField("Maximum", maxsize)
+		gd.addMessage("Circularity constraints for particle analysis")
+		gd.addNumericField("Minimum", mincirc)
+		gd.addNumericField("Maximum", maxcirc)
 		gd.addRadioButtonGroup("",["Apply to this Image","Skip this Image","Automatically Confirm All"],3,1,"Apply to this Image")
 		##Skips over UI elements if user confirmed all
 		if ConfirmAll != True:
@@ -202,6 +210,8 @@ for image_set in DictKeys:
 				IJ.run("Select None")
 				minsize = gd.getNextString()
 				maxsize = gd.getNextString()
+				mincirc = gd.getNextNumber()
+				maxcirc = gd.getNextNumber()
 				Analysis_done = False
 		else:
 			Analysis_done = True
